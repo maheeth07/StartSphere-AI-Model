@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Startup Market Report Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(120deg, #175873, #2b7c85);
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background-color: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+    }
+
+    textarea, input {
+      background-color: #f4f9fb;
+      border-radius: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 30px;
+      background: linear-gradient(to right, #0c1446, #2b7c85);
+      color: white;
+      font-weight: bold;
+      padding: 12px 25px;
+      transition: 0.3s ease-in-out;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .report-section {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-top: 30px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      white-space: pre-wrap;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #0c1446;
+    }
+
+    .emoji {
+      font-size: 1.5rem;
+      margin-right: 10px;
+    }
+
+    .alert {
+      border-radius: 10px;
+    }
+
+    .title-header {
+      color: white;
+      text-shadow: 2px 2px #0c1446;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="mb-4 text-center title-header">🚀 Startup Market Report Generator</h1>
+
+    <div class="card">
+      <div id="alert" class="alert alert-danger d-none"></div>
+
+      <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" placeholder="e.g. EcoBox">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Domain</label>
+        <input type="text" class="form-control" id="domain" placeholder="e.g. Sustainability / Packaging">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="description" rows="2" placeholder="Describe your startup..."></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Problem</label>
+        <textarea class="form-control" id="problem" rows="2" placeholder="What problem are you solving?"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Solution</label>
+        <textarea class="form-control" id="solution" rows="2" placeholder="Describe your solution..."></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Target Market</label>
+        <textarea class="form-control" id="target_market" rows="2" placeholder="Who are your customers?"></textarea>
+      </div>
+
+      <div class="text-center">
+        <button id="generateBtn" onclick="generateReport()">
+          <span id="btnText">✨ Generate Report</span>
+          <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="report" class="report-section d-none">
+      <h4 class="text-success">📝 Generated Report</h4>
+      <div id="formattedReport"></div>
+    </div>
+  </div>
+
+  <script>
+    function validateFields(data) {
+      return Object.values(data).every(value => value.trim() !== "");
+    }
+
+    function formatReport(raw) {
+      const sections = raw.split(/(Market Analysis:|Competitor Analysis:|Market Gaps:|Validation Score:)/);
+      const emojis = {
+        "Market Analysis:": "🟩",
+        "Competitor Analysis:": "🟧",
+        "Market Gaps:": "🟨",
+        "Validation Score:": "🟦"
+      };
+      let result = "";
+      for (let i = 1; i < sections.length; i += 2) {
+        const header = sections[i].trim();
+        const content = sections[i + 1]?.trim() || "";
+        result += `<p class="section-title"><span class="emoji">${emojis[header] || ""}</span>${header}</p><p>${content}</p>`;
+      }
+      return result || `<p>${raw}</p>`;
+    }
+
+    async function generateReport() {
+      const data = {
+        title: document.getElementById("title").value,
+        domain: document.getElementById("domain").value,
+        description: document.getElementById("description").value,
+        problem: document.getElementById("problem").value,
+        solution: document.getElementById("solution").value,
+        target_market: document.getElementById("target_market").value,
+      };
+
+      const alert = document.getElementById("alert");
+      const btnText = document.getElementById("btnText");
+      const btnSpinner = document.getElementById("btnSpinner");
+      const reportDiv = document.getElementById("report");
+      const formattedReport = document.getElementById("formattedReport");
+
+      if (!validateFields(data)) {
+        alert.textContent = "❌ Please fill in all fields.";
+        alert.classList.remove("d-none");
+        return;
+      }
+
+      alert.classList.add("d-none");
+      btnSpinner.classList.remove("d-none");
+      btnText.textContent = "Generating...";
+
+      const response = await fetch("/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      btnSpinner.classList.add("d-none");
+      btnText.textContent = "✨ Generate Report";
+
+      reportDiv.classList.remove("d-none");
+      formattedReport.innerHTML = formatReport(result.report);
+    }
+  </script>
+
+</body>
+</html>
